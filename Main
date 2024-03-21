@@ -1,0 +1,180 @@
+import numpy as np
+from scipy.optimize import minimize
+
+def perform_conv_fractal_transform(weights):
+    """
+    Perform fractal transformation for convolutional layers.
+    """
+    # Implement the fractal transformation logic specific to convolutional layers
+    # Consider the unique characteristics and structures of convolutional weights
+    fractal = np.zeros_like(weights)
+    for i in range(weights.shape[0]):
+        for j in range(weights.shape[1]):
+            for k in range(weights.shape[2]):
+                fractal[i, j, k] = compute_fractal_value(weights[i, j, k])
+    return fractal
+
+def perform_dense_fractal_transform(weights):
+    """
+    Perform fractal transformation for dense layers.
+    """
+    # Implement the fractal transformation logic specific to dense layers
+    # Consider the unique characteristics and structures of dense weights
+    fractal = np.zeros_like(weights)
+    for i in range(weights.shape[0]):
+        for j in range(weights.shape[1]):
+            fractal[i, j] = compute_fractal_value(weights[i, j])
+    return fractal
+
+def compute_fractal_value(weight):
+    """
+    Compute the fractal value for a given weight.
+    """
+    # Placeholder logic for computing fractal values
+    # Replace with your specific fractal computation algorithm
+    return np.random.rand()
+
+def fractal_interpolation(fractal_1, fractal_2, domain_rules):
+    """
+    Combine two fractal layers based on domain-specific rules.
+    """
+    interpolated_fractal = np.zeros_like(fractal_1)
+    for i in range(fractal_1.shape[0]):
+        for j in range(fractal_1.shape[1]):
+            if fractal_1[i, j] > domain_rules['threshold_1'] and fractal_2[i, j] > domain_rules['threshold_2']:
+                interpolated_fractal[i, j] = domain_rules['interpolation_func'](fractal_1[i, j], fractal_2[i, j])
+            elif fractal_1[i, j] > fractal_2[i, j]:
+                interpolated_fractal[i, j] = fractal_1[i, j]
+            else:
+                interpolated_fractal[i, j] = fractal_2[i, j]
+    return interpolated_fractal
+
+def adjust_fractal_dimension(fractal, alpha):
+    """
+    Adjust the fractal dimension of the merged layer to optimize performance.
+    """
+    adjusted_fractal = np.clip(fractal ** alpha, 0.1, 10.0)
+    return adjusted_fractal
+
+def evaluate_performance(model, domain_metrics):
+    """
+    Evaluate the performance of the model for specific domain metrics.
+    """
+    performance_scores = []
+    for metric_func in domain_metrics:
+        score = metric_func(model)
+        performance_scores.append(score)
+    
+    weights = [0.3, 0.5, 0.2]  # Example weights for each metric
+    overall_score = np.average(performance_scores, weights=weights)
+    return overall_score
+
+def merge_probability(layer_1, layer_2):
+    """
+    Assign a probability to a pair of layers based on their similarity.
+    """
+    weights_1 = layer_1.get_weights()[0].flatten()
+    weights_2 = layer_2.get_weights()[0].flatten()
+    cosine_sim = np.dot(weights_1, weights_2) / (np.linalg.norm(weights_1) * np.linalg.norm(weights_2))
+    probability = (cosine_sim + 1) / 2
+    return probability
+
+def optimize_alpha(model, domain_metrics, merged_fractal, bounds):
+    """
+    Optimize the alpha value for adjusting fractal dimension.
+    """
+    def objective(alpha):
+        adjusted_fractal = adjust_fractal_dimension(merged_fractal, alpha)
+        model.layers[-1].set_weights([adjusted_fractal])
+        score = evaluate_performance(model, domain_metrics)
+        return -score  # Negative score for minimization
+    
+    result = minimize(objective, x0=1.0, bounds=[bounds], method='Powell')
+    optimal_alpha = result.x[0]
+    return optimal_alpha
+
+def fimma(models, num_iterations, domain_metrics, layer_types):
+    """
+    Fractal-based Iterative Model Merging Algorithm (FIMMA).
+    """
+    for _ in range(num_iterations):
+        model_indices = np.random.choice(len(models), 2, replace=False)
+        model_1, model_2 = models[model_indices[0]], models[model_indices[1]]
+        
+        for layer_type in layer_types:
+            merge_layers = []
+            for layer_1, layer_2 in zip(model_1.layers, model_2.layers):
+                if isinstance(layer_1, layer_type) and isinstance(layer_2, layer_type):
+                    if merge_probability(layer_1, layer_2) > 0.5:
+                        merge_layers.append((layer_1, layer_2))
+            
+            for layer_1, layer_2 in merge_layers:
+                if isinstance(layer_1, ConvLayer):
+                    fractal_1 = perform_conv_fractal_transform(layer_1.get_weights()[0])
+                    fractal_2 = perform_conv_fractal_transform(layer_2.get_weights()[0])
+                elif isinstance(layer_1, DenseLayer):
+                    fractal_1 = perform_dense_fractal_transform(layer_1.get_weights()[0])
+                    fractal_2 = perform_dense_fractal_transform(layer_2.get_weights()[0])
+                else:
+                    raise ValueError(f"Unsupported layer type: {type(layer_1)}")
+                
+                domain_rules = {'threshold_1': 0.5, 'threshold_2': 0.5, 'interpolation_func': lambda x, y: (x + y) / 2}
+                merged_fractal = fractal_interpolation(fractal_1, fractal_2, domain_rules)
+                
+                alpha_bounds = (0.1, 10.0)
+                optimal_alpha = optimize_alpha(model_1, domain_metrics, merged_fractal, alpha_bounds)
+                optimized_fractal = adjust_fractal_dimension(merged_fractal, optimal_alpha)
+                
+                layer_1.set_weights([optimized_fractal])
+        
+        merged_model_score = evaluate_performance(model_1, domain_metrics)
+        print(f"Merged Model Score: {merged_model_score}")
+    
+    best_model = max(models, key=lambda model: evaluate_performance(model, domain_metrics))
+    return best_model
+
+# Define the necessary layer types
+class ConvLayer:
+    def __init__(self, weights):
+        self.weights = weights
+    
+    def get_weights(self):
+        return [self.weights]
+    
+    def set_weights(self, weights):
+        self.weights = weights[0]
+
+class DenseLayer:
+    def __init__(self, weights):
+        self.weights = weights
+    
+    def get_weights(self):
+        return [self.weights]
+    
+    def set_weights(self, weights):
+        self.weights = weights[0]
+
+# Define the domain-specific evaluation metrics
+def metric_1(model):
+    # Implement the evaluation logic for metric 1
+    return np.random.rand()
+
+def metric_2(model):
+    # Implement the evaluation logic for metric 2
+    return np.random.rand()
+
+def metric_3(model):
+    # Implement the evaluation logic for metric 3
+    return np.random.rand()
+
+# Example usage
+domain_metrics = [metric_1, metric_2, metric_3]
+layer_types = [ConvLayer, DenseLayer]
+
+# Initialize TinyLlama models
+model_1 = ...  # Initialize model_1
+model_2 = ...  # Initialize model_2
+model_3 = ...  # Initialize model_3
+models = [model_1, model_2, model_3]
+
+merged_model = fimma(models, num_iterations=10, domain_metrics=domain_metrics, layer_types=layer_types)
