@@ -1,0 +1,39 @@
+def perform_dense_fractal_transform(weights, num_iterations=100, threshold=2.0):
+    """
+    Perform fractal transformation for dense layers.
+    """
+    # Get the shape of the dense weights
+    num_units, num_inputs = weights.shape
+
+    # Initialize the fractal representation
+    fractal = np.zeros_like(weights)
+
+    # Iterate over each unit in the dense layer
+    for i in range(num_units):
+        # Extract the current unit weights
+        unit_weights = weights[i]
+
+        # Normalize the unit weights to the range [-1, 1]
+        normalized_weights = (unit_weights - np.min(unit_weights)) / (np.max(unit_weights) - np.min(unit_weights))
+        normalized_weights = normalized_weights * 2 - 1
+
+        # Apply the fractal transformation to the normalized weights
+        transformed_weights = np.zeros_like(normalized_weights)
+        for j in range(num_inputs):
+            z = complex(0, 0)
+            c = complex(normalized_weights[j], 0)
+
+            for _ in range(num_iterations):
+                z = z ** 2 + c
+                if abs(z) > threshold:
+                    break
+
+            transformed_weights[j] = abs(z)
+
+        # Normalize the transformed weights to the range [0, 1]
+        normalized_transformed_weights = (transformed_weights - np.min(transformed_weights)) / (np.max(transformed_weights) - np.min(transformed_weights))
+
+        # Assign the transformed weights to the fractal representation
+        fractal[i] = normalized_transformed_weights
+
+    return fractal
